@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дашборд проекта: Цифровизация ООО «ЛЕТТА»</title>
+    <!-- Chosen Palette: Calm Harmony (Теплые нейтральные оттенки с акцентным синим) -->
+    <!-- Application Structure Plan: Создан одностраничный интерактивный дашборд. Структура выбрана для максимальной наглядности и удобства навигации по ключевой информации проекта. Вместо линейного отчета, который требует последовательного чтения, дашборд позволяет пользователю сразу видеть общую картину (обзор, общая стоимость/сроки) и углубляться в интересующие разделы (этапы, Q&A) по клику или скроллу. Этапы представлены в виде карточек для прямого сравнения. Визуализации (диаграммы) вынесены в отдельный блок для акцента на ключевых показателях. Q&A в формате аккордеона экономит место и упрощает восприятие. Такая структура ориентирована на быстрое принятие решений и удобный обзор для всех участников проекта. -->
+    <!-- Visualization & Content Choices: 
+        - Общая информация (стоимость, сроки): Динамические счетчики для привлечения внимания. Цель: информировать.
+        - Этапы проекта: Карточки с кратким описанием. Цель: организовать информацию. Взаимодействие: нет, статичное представление для ясности.
+        - Распределение стоимости: Кольцевая диаграмма (Chart.js/Canvas). Цель: сравнить доли. Взаимодействие: при наведении отображаются точные суммы и проценты. Позволяет быстро оценить вклад каждого этапа в общий бюджет.
+        - График реализации: Горизонтальная гистограмма в стиле Ганта (Chart.js/Canvas). Цель: показать изменение во времени. Взаимодействие: при наведении видны сроки. Демонстрирует параллельное выполнение и общую длительность проекта.
+        - Вопросы и ответы: Интерактивный аккордеон (HTML/CSS/JS). Цель: организовать текстовую информацию. Взаимодействие: клик для раскрытия ответа. Экономит пространство и позволяет пользователю сфокусироваться на интересующем вопросе.
+        - Следующие шаги: Стилизованный список. Цель: информировать.
+        Все визуализации созданы без SVG и Mermaid JS, как и требовалось.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 350px;
+            width: 100%;
+            max-width: 500px;
+        }
+        .gantt-chart-container {
+            position: relative;
+            margin: auto;
+            height: 250px;
+            width: 100%;
+            max-width: 800px;
+        }
+        .accordion-content {
+            display: none;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .accordion-button.active .accordion-arrow {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-xl font-bold text-slate-900">⚙️ Проект «ЛЕТТА»</span>
+                </div>
+                <nav class="hidden md:flex space-x-8">
+                    <a href="#overview" class="text-slate-600 hover:text-blue-600 transition">Обзор</a>
+                    <a href="#stages" class="text-slate-600 hover:text-blue-600 transition">Этапы</a>
+                    <a href="#kpi" class="text-slate-600 hover:text-blue-600 transition">Показатели</a>
+                    <a href="#qa" class="text-slate-600 hover:text-blue-600 transition">Вопросы-ответы</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        
+        <section id="overview" class="text-center mb-16">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mb-4">План проекта по цифровизации ООО «ЛЕТТА»</h1>
+            <p class="max-w-3xl mx-auto text-lg text-slate-600 mb-8">Интерактивный дашборд для отслеживания ключевых этапов, сроков и бюджета проекта внедрения MES Calibr и интеграции с маркетплейсами.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200">
+                    <h3 class="text-lg font-semibold text-slate-500 mb-2">Общая стоимость</h3>
+                    <p class="text-4xl font-bold text-blue-600" id="totalCost">0 ₽</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200">
+                    <h3 class="text-lg font-semibold text-slate-500 mb-2">Общий срок (параллельно)</h3>
+                    <p class="text-4xl font-bold text-blue-600" id="totalDuration">0 нед.</p>
+                </div>
+                 <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200">
+                    <h3 class="text-lg font-semibold text-slate-500 mb-2">Дата встречи</h3>
+                    <p class="text-4xl font-bold text-blue-600">27.06.25</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="stages" class="mb-16">
+            <h2 class="text-3xl font-bold text-center text-slate-900 mb-10">Этапы проекта</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 transition-all hover:shadow-2xl hover:-translate-y-1">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-4">Этап 1: Внедрение MES Calibr</h3>
+                    <p class="text-slate-600 mb-6">Цифровизация производственных процессов, управление запасами, отслеживание партий и внедрение динамического планирования.</p>
+                    <div class="space-y-4 mb-6">
+                        <h4 class="font-semibold text-slate-700">Ключевые работы:</h4>
+                        <ul class="list-disc list-inside text-slate-600 space-y-2">
+                            <li>Поставка базовой лицензии MES Calibr</li>
+                            <li>Внедрение модуля «Управление запасами и складами»</li>
+                            <li>Внедрение модуля «Прослеживаемость партий»</li>
+                            <li>Внедрение модуля «Динамический планировщик»</li>
+                            <li>Интеграция с ERP-системой заказчика (1С)</li>
+                            <li>Обучение персонала</li>
+                        </ul>
+                    </div>
+                    <div class="flex justify-between items-baseline bg-slate-100 p-4 rounded-lg">
+                        <span class="font-semibold text-slate-700">Срок: 14 недель</span>
+                        <span class="text-xl font-bold text-blue-700">5 210 650 ₽</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 transition-all hover:shadow-2xl hover:-translate-y-1">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-4">Этап 2: Оркестратор маркетплейсов</h3>
+                    <p class="text-slate-600 mb-6">Анализ и управление данными с маркетплейсов для обеспечения оптимальной производственной и ценовой политики.</p>
+                     <div class="space-y-4 mb-6">
+                        <h4 class="font-semibold text-slate-700">Ключевые работы:</h4>
+                        <ul class="list-disc list-inside text-slate-600 space-y-2">
+                            <li>Разработка коннекторов для маркетплейсов</li>
+                            <li>Создание сервиса «Score» для расчета маржинальности</li>
+                            <li>Внедрение сервиса «Репрайсер»</li>
+                            <li>Интеграция с MES Calibr для приоритизации</li>
+                             <li>Настройка UI/дашбордов</li>
+                            <li>DevOps</li>
+                        </ul>
+                    </div>
+                    <div class="flex justify-between items-baseline bg-slate-100 p-4 rounded-lg">
+                        <span class="font-semibold text-slate-700">Срок: 18 недель</span>
+                        <span class="text-xl font-bold text-blue-700">5 058 950 ₽</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="kpi" class="mb-16">
+            <h2 class="text-3xl font-bold text-center text-slate-900 mb-10">Ключевые показатели</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
+                    <h3 class="text-2xl font-bold text-center text-slate-800 mb-4">Распределение стоимости</h3>
+                    <div class="chart-container">
+                        <canvas id="costChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
+                    <h3 class="text-2xl font-bold text-center text-slate-800 mb-4">График реализации (параллельно)</h3>
+                    <div class="gantt-chart-container">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="qa" class="max-w-4xl mx-auto mb-16">
+            <h2 class="text-3xl font-bold text-center text-slate-900 mb-10">Вопросы и ответы</h2>
+            <div class="space-y-4" id="accordion">
+                <div class="bg-white rounded-xl shadow-md border border-slate-200">
+                    <button class="accordion-button w-full flex justify-between items-center text-left p-6 font-semibold text-slate-800 text-lg">
+                        <span>Как будет рассчитываться себестоимость продукции от разных поставщиков?</span>
+                        <span class="accordion-arrow transition-transform duration-300">▼</span>
+                    </button>
+                    <div class="accordion-content px-6 pb-6 text-slate-600">
+                        <p>Система обеспечивает полную прослеживаемость по партиям. Она рассчитывает фактическую, а не усредненную себестоимость для каждой единицы продукции, точно учитывая, из какой партии материалов (с конкретной стоимостью) она была произведена. Прямые затраты (материалы, работа) рассчитываются автоматически. Косвенные издержки потребуют первоначальной настройки коэффициентов для каждого производственного участка.</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-md border border-slate-200">
+                    <button class="accordion-button w-full flex justify-between items-center text-left p-6 font-semibold text-slate-800 text-lg">
+                        <span>Как будет осуществляться контроль и сбор данных с фабрик-партнеров?</span>
+                        <span class="accordion-arrow transition-transform duration-300">▼</span>
+                    </button>
+                    <div class="accordion-content px-6 pb-6 text-slate-600">
+                        <p>Это будет реализовано в рамках третьей фазы проекта, которая не включена в текущее предложение. Планируется предоставить партнерам планшеты с доступом к системе, через которые они будут отчитываться о выполнении заказов «ЛЕТТА». Это позволит в реальном времени отслеживать статус заказов и точно рассчитывать их себестоимость.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md border border-slate-200">
+                    <button class="accordion-button w-full flex justify-between items-center text-left p-6 font-semibold text-slate-800 text-lg">
+                        <span>Как система будет управлять остатками и логистикой?</span>
+                        <span class="accordion-arrow transition-transform duration-300">▼</span>
+                    </button>
+                    <div class="accordion-content px-6 pb-6 text-slate-600">
+                        <p>Текущее предложение сфокусировано на производственной части (MES) и управлении маржинальностью на маркетплейсах (Оркестратор). Задача управления распределением остатков — это более сложная логистическая задача. У «Индастриал Клауд» есть опыт и решения для этого, но это отдельный модуль, который не был включен в первоначальное предложение. Его можно будет обсудить и добавить в проект.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md border border-slate-200">
+                    <button class="accordion-button w-full flex justify-between items-center text-left p-6 font-semibold text-slate-800 text-lg">
+                        <span>Возможна ли интеграция с 1С:ЗУП?</span>
+                        <span class="accordion-arrow transition-transform duration-300">▼</span>
+                    </button>
+                    <div class="accordion-content px-6 pb-6 text-slate-600">
+                        <p>Да, такая интеграция возможна и реализуема.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="next-steps">
+             <h2 class="text-3xl font-bold text-center text-slate-900 mb-10">Следующие шаги</h2>
+             <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-slate-200">
+                 <ul class="list-decimal list-inside space-y-4 text-lg text-slate-700">
+                     <li>Команда «Индастриал Клауд» обновит коммерческое предложение с учетом обсужденных вопросов.</li>
+                     <li>Обновленное предложение будет направлено команде ООО «ЛЕТТА» для внутреннего рассмотрения.</li>
+                     <li>ООО «ЛЕТТА» проведет внутреннее обсуждение и предоставит обратную связь (ориентировочно > 1 недели).</li>
+                 </ul>
+             </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 mt-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-slate-500">
+            <p>&copy; 2025 ООО «Индастриал Клауд» & ООО «ЛЕТТА».</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const projectData = {
+                stages: [
+                    { name: 'Этап 1: MES Calibr', cost: 5210650, duration: 14, start: 0 },
+                    { name: 'Этап 2: Оркестратор', cost: 5058950, duration: 18, start: 14 }
+                ],
+                totalDuration: 32,
+                totalCost: 10269600
+            };
+
+            function animateValue(obj, start, end, duration) {
+                let startTimestamp = null;
+                const step = (timestamp) => {
+                    if (!startTimestamp) startTimestamp = timestamp;
+                    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                    const currentValue = Math.floor(progress * (end - start) + start);
+                     if (obj.id === 'totalCost') {
+                        obj.innerHTML = `${currentValue.toLocaleString('ru-RU')} ₽`;
+                    } else {
+                        obj.innerHTML = `${currentValue} нед.`;
+                    }
+                    if (progress < 1) {
+                        window.requestAnimationFrame(step);
+                    }
+                };
+                window.requestAnimationFrame(step);
+            }
+
+            const totalCostEl = document.getElementById('totalCost');
+            const totalDurationEl = document.getElementById('totalDuration');
+            animateValue(totalCostEl, 0, projectData.totalCost, 1500);
+            animateValue(totalDurationEl, 0, projectData.totalDuration, 1500);
+
+            const costCtx = document.getElementById('costChart').getContext('2d');
+            new Chart(costCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: projectData.stages.map(s => s.name),
+                    datasets: [{
+                        data: projectData.stages.map(s => s.cost),
+                        backgroundColor: ['#3b82f6', '#10b981'],
+                        borderColor: '#ffffff',
+                        borderWidth: 4,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 14 },
+                                color: '#475569'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                        label += `${context.parsed.toLocaleString('ru-RU')} ₽ (${percentage}%)`;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const timelineCtx = document.getElementById('timelineChart').getContext('2d');
+            new Chart(timelineCtx, {
+                type: 'bar',
+                data: {
+                    labels: projectData.stages.map(s => s.name.split(':')[1].trim()),
+                    datasets: [{
+                        label: 'Сроки (недели)',
+                        data: projectData.stages.map(s => [s.start, s.start + s.duration]),
+                        backgroundColor: ['rgba(59, 130, 246, 0.7)', 'rgba(16, 185, 129, 0.7)'],
+                        borderColor: ['#3b82f6', '#10b981'],
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Недели',
+                                font: { size: 14 },
+                                color: '#475569'
+                            },
+                             grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                           display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const stage = projectData.stages[context.dataIndex];
+                                    return `${stage.name}: ${stage.duration} недель (с ${stage.start + 1} по ${stage.start + stage.duration} нед.)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const accordionButtons = document.querySelectorAll('.accordion-button');
+            accordionButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const content = button.nextElementSibling;
+                    button.classList.toggle('active');
+                    if (content.style.display === 'block') {
+                        content.style.display = 'none';
+                    } else {
+                        content.style.display = 'block';
+                    }
+                });
+            });
+            
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
